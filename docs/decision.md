@@ -187,19 +187,45 @@ Note: The number before the letters tells you how many private bedrooms you have
 
 
 
-## 2026-10-11:Decisions
-- `平屋`: 213 rows (0.12%). Parsed as stories_above=1, stories_below=0 (domain decision).
-- 平屋 rent: median ¥80,000, mean ¥96,704, range ¥39,000 to ¥350,000. Not clearly higher than the dataset median (¥82,500); my guess that houses rent higher was not supported.
-- Keep an `is_hiraya` flag as a candidate feature (a rare property type; no property-type column exists). Test it in the ablation, don't assume it helps.
+## 2026-10-11: Decisions
 
+### Stories / property type
+- `平屋`: 213 rows (0.12%)
+- Parsed as `stories_above = 1`, `stories_below = 0`.
+- The rent distribution for `平屋` is not clearly higher than the overall dataset: median ¥80,000, mean ¥96,704, range ¥39,000 to ¥350,000. This does not support the earlier assumption that houses would rent for more.
+- Keep `is_hiraya` as a candidate feature, but only as a model feature to test in ablation; do not assume it helps.
 
-- (997 rows, 0.5%): return (None, None, None), a legitimate missing value, not a parse failure. Keep the row; flag floor_missing. Floor is a weak feature anyway.
-Basement B1: encode as a negative number, so B1階 becomes -1. Check a few rows to confirm these are really basement units.
-Open-ended ranges like 1-階: the end is unknown. Simplest rule: treat as a multi-floor unit with floor_max = floor_min, and flag it. Only 32 rows, so don’t agonize.
-M9階 (5) and 9B9階 (2): I’m not sure what these mean. Look at the rows (title, stories, rooms) and decide. With 7 rows total, returning FAILED and excluding or flagging them is acceptable, and honest.
+### Floor parsing
+- 997 rows (0.5%) are `-`, which is treated as a legitimate missing value rather than a parse failure.
+- Basement floors are encoded as negative numbers: `B1階 -> -1`.
+- Open-ended ranges like `1-階` are treated as multi-floor with `floor_max = floor_min` and flagged.
+- Rare patterns `M9階` and `9B9階` are intentionally rejected as `FAILED` and then reviewed/flagged rather than silently coerced.
+- Parser behavior confirmed on examples:
+  - `"1階" -> (1, 1, 0)`
+  - `"12階" -> (12, 12, 0)`
+  - `"1-2階" -> (1, 2, 1)`
+  - `"1-階" -> (1, 1, 1)`
+  - `"B1階" -> (-1, -1, 0)`
+  - `"B1-1階" -> (-1, 1, 1)`
+  - `"-" -> (None, None, None)`
+  - `"M1階"` and `"1B1階"` -> `FAILED`
+- The floor parser passed the notebook tests with only 7 rows failing by design (`M2階` and `1B2階`), and the rest of the rows parsed successfully.
+- `is_multi_floor` is now set on a subset of rows with range / multi-floor values; basement rows remain separate.
 
+### Area parsing
+- Built area parser: all rows parsed successfully; no failures.
+- Distribution: count 183,490; mean 34.21 m²; median 26.90 m²; min 1.00 m²; max 562.63 m².
+- The min and max are suspicious outliers and need a quick review, but they are not currently treated as parse errors.
 
-Floor shapes found and the rule for each (- becomes missing, B becomes negative, open range 1-階 gets floor_max = floor_min and flag 1, M9階/9B9階 fail on purpose)
-Failure count, multi-floor count, basement count, missing count
-Number of rows where floor exceeds building height
-One line: “Copilot’s first parse_floor rejected open-ended ranges; caught by tests, fixed.”
+### Building-age parsing
+- Built building-age parser: no failures in the notebook test.
+-- 新築 encoded as age_years = 0 plus is_new = 1 (domain decision: newly built, under about a year old). Not treated as continuous with 築1年; the flag lets the model learn any new-build premium.
+- Check: median rent by age 0 vs 1: [result]
+- 4 rows had `築99年以上` ("99 years or older"; the site caps the displayed age). Encoded as age_years=99, is_new=0, age_is_lower_bound=1. Parser and test updated.
+- Building age parser: 0 failures on 183,490 rows. 新築 → age_years=0, is_new=1 (28,963 rows, 15.8%). 4 rows had `築99年以上` (site caps the displayed age); encoded as age_years=99, is_new=0, age_is_lower_bound=1. Test updated to reject `築14年abc` instead.
+
+### Summary of notebook direction
+- Deduplication and value parsing are now the source of truth for the cleaning pipeline.
+- Parsing rules are intentionally conservative: unknown rare floor formats are flagged rather than silently misparsed.
+- Model features remain constrained by leakage rules: deposits and gratuity stay out, and parsing is done in code rather than by editing raw source files.
+

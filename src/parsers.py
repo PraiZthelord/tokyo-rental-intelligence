@@ -62,13 +62,13 @@ def parse_area(text):
 #for building age parser
 #parse_buildig_age(text) -> (age) as int
 #Examples "築10年" -> 10, "築1年" -> 1
-# For 新築 -> 新築 for now 
+
 # Anything else -> ("FAILED", None)
 def parse_building_age(text):
     s = unicodedata.normalize("NFKC", str(text)).strip()
     if s == "新築":
-        return "新築"
-    m = re.fullmatch(r"築(\d+)年", s)
+        return (0, 1)
+    m = re.fullmatch(r"築(\d+)年(以上)?", s)
     if m:
-        return int(m.group(1))
+        return (int(m.group(1)), 0)
     return ("FAILED", None)

@@ -48,13 +48,33 @@ def test_parse_area():
     assert parse_area("20m") == 20.0
     assert parse_area("abc") == ("FAILED", None)
 
-
+from src.parsers import parse_building_age
 # test Building Age parser
 # Examples "築10年" -> 10, "築1年" -> 1, 新築 -> 新築
 
-def test_parse_building_age():
-    from src.parsers import parse_building_age
-    assert parse_building_age("築10年") == 10
-    assert parse_building_age("築1年") == 1
-    assert parse_building_age("新築") == "新築"
+def test_age_new():
+    assert parse_building_age("新築") == (0, 1)
+
+def test_age_normal():
+    assert parse_building_age("築14年") == (14, 0)
+
+def test_age_one_digit():
+    assert parse_building_age("築1年") == (1, 0)
+
+def test_age_two_digit():
+    assert parse_building_age("築77年") == (77, 0)
+
+def test_age_fullwidth_digits():
+    assert parse_building_age("築１４年") == (14, 0)
+
+def test_age_extra_spaces():
+    assert parse_building_age(" 築14年 ") == (14, 0)
+
+def test_age_unknown():
     assert parse_building_age("abc") == ("FAILED", None)
+
+def test_age_partial_match_rejected():
+    assert parse_building_age("築14年abc") == ("FAILED", None)
+
+def test_age_or_more():
+    assert parse_building_age("築99年以上") == (99, 0)
