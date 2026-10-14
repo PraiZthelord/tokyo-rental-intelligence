@@ -1,6 +1,9 @@
 
 from src.parsers import parse_stories
 
+def test_stories_hiraya():
+    assert parse_stories("平屋") == (1, 0)
+
 def test_stories_simple():
     assert parse_stories("2階建") == (2, 0)
 
@@ -38,6 +41,7 @@ def test_floor_simple():
     assert parse_floor("-") == (None, None, None)
     assert parse_floor("M1階") == ("FAILED", None, None)
     assert parse_floor("abc") == ("FAILED", None, None)
+    
 
 
 # test parse_area 

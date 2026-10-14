@@ -8,13 +8,14 @@ import re
 
 def parse_stories(text):
     s = unicodedata.normalize("NFKC", str(text)).strip()
+    if s == "平屋":
+        return (1, 0)
     m = re.fullmatch(r"(?:地下(\d+))?(?:地上)?(\d+)階建", s)
     if m:
         below = int(m.group(1)) if m.group(1) else 0
         above = int(m.group(2))
         return (above, below)
     return ("FAILED", None)
-
 
 
 # parse_floor(text) -> (floor_min, floor_max, is_multi_floor)
