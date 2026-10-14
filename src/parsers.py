@@ -91,3 +91,54 @@ def parse_rooms(text):
         return (n, int(bool(m.group(3))), int(bool(m.group(4))),
                 1, int(bool(m.group(2))), 0)
     return ("FAILED", None, None, None, None, None)
+
+
+# parse_station_entry(entry) -> dict or None
+# Input is ONE entry (already split on commas). Normalize with NFKC first.
+# Three formats:
+#   walk: "西武新宿線/東伏見駅 歩3分" -> mode="walk", walk_min=3
+#   bus:  "JR中央線/三鷹駅 バス23分 (バス停)東伏見駅 歩3分" -> mode="bus", bus_min=23, bus_stop_walk_min=3, walk_min=None
+#   car:  "JR常磐線/亀有駅 車14分(4.1km)" -> mode="car", car_min=14, car_km=4.1, walk_min=None
+# Return dict with keys: line, station, mode, walk_min, bus_min, bus_stop_walk_min, car_min, car_km
+# IMPORTANT: for bus entries the trailing 歩N分 is the walk to the bus stop, NOT to the station.
+# Check bus and car patterns BEFORE the walk pattern. Use re.fullmatch.
+# Unrecognised entry -> return None. Never raise.
+def parse_station_entry(entry):
+    s = unicodedata.normalize("NFKC", str(entry)).strip()
+    m = re.fullmatch(r"([^/]+)/([^/ ]+) バス(\d+)分 \(バス停\)(.+) 歩(\d+)分", s)
+    if m:
+        return {
+            "line": m.group(1),
+            "station": m.group(2),
+            "mode": "bus",
+            "walk_min": None,
+            "bus_min": int(m.group(3)),
+            "bus_stop_walk_min": int(m.group(5)),
+            "car_min": None,
+            "car_km": None
+        }
+    m = re.fullmatch(r"([^/]+)/([^/]+) 車(\d+)分\(([\d.]+)km\)", s)
+    if m:
+        return {
+            "line": m.group(1),
+            "station": m.group(2),
+            "mode": "car",
+            "walk_min": None,
+            "bus_min": None,
+            "bus_stop_walk_min": None,
+            "car_min": int(m.group(3)),
+            "car_km": float(m.group(4))
+        }
+    m = re.fullmatch(r"([^/]+)/([^/]+) 歩(\d+)分", s)
+    if m:
+        return {
+            "line": m.group(1),
+            "station": m.group(2),
+            "mode": "walk",
+            "walk_min": int(m.group(3)),
+            "bus_min": None,
+            "bus_stop_walk_min": None,
+            "car_min": None,
+            "car_km": None
+        }
+    return None

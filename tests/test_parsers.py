@@ -122,4 +122,64 @@ def test_parse_rooms_1K():
     assert parse_rooms(" 2LDK ") == (2, 1, 1, 1, 0, 0)
 
 
+'''Write pytest tests for parse_station_entry in src/parsers.py (file: tests/test_parsers.py).
+The function takes ONE station entry string and returns a dict with keys:
+line, station, mode, walk_min, bus_min, bus_stop_walk_min, car_min, car_km
+Unrecognised input returns None. It never raises.
+
+One test function per case, using assert ==:
+
+Walk:
+- "西武新宿線/東伏見駅 歩3分" -> line="西武新宿線", station="東伏見", mode="walk", walk_min=3,
+  all other numeric keys None
+- "ＪＲ青梅線/河辺駅 歩15分" (full-width ＪＲ) -> line="JR青梅線", station="河辺", mode="walk", walk_min=15
+- " 西武新宿線/東伏見駅 歩3分 " (spaces) -> same as the first walk case
+
+Bus (the trailing 歩N分 is the walk to the BUS STOP, not the station):
+- "ＪＲ中央線/三鷹駅 バス23分 (バス停)東伏見駅 歩3分" -> mode="bus", station="三鷹",
+  bus_min=23, bus_stop_walk_min=3, walk_min=None
+
+Car:
+- "ＪＲ常磐線/亀有駅 車14分(4.1km)" -> mode="car", car_min=14, car_km=4.1, walk_min=None
+
+Failures, each expecting None:
+- "abc", "", "西武新宿線/東伏見駅" (no time), "西武新宿線/東伏見駅 歩分" (no number)
+
+Import with: from src.parsers import parse_station_entry
+Do not modify parse_station_entry. Do not add any test that is not listed.'''
+
+def test_parse_station_entry_walk():
+    from src.parsers import parse_station_entry
+    assert parse_station_entry("西武新宿線/東伏見駅 歩3分") == {
+        "line": "西武新宿線",
+        "station": "東伏見駅",
+        "mode": "walk",
+        "walk_min": 3,
+        "bus_min": None,
+        "bus_stop_walk_min": None,
+        "car_min": None,
+        "car_km": None
+    }
+    assert parse_station_entry("ＪＲ青梅線/河辺駅 歩15分") == {
+        "line": "JR青梅線",
+        "station": "河辺駅",
+        "mode": "walk",
+        "walk_min": 15,
+        "bus_min": None,
+        "bus_stop_walk_min": None,
+        "car_min": None,
+        "car_km": None
+    }
+    assert parse_station_entry(" 西武新宿線/東伏見駅 歩3分 ") == {
+        "line": "西武新宿線",
+        "station": "東伏見駅",
+        "mode": "walk",
+        "walk_min": 3,
+        "bus_min": None,
+        "bus_stop_walk_min": None,
+        "car_min": None,
+        "car_km": None
+    }
+
+
     
