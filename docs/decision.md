@@ -229,3 +229,9 @@ Note: The number before the letters tells you how many private bedrooms you have
 - Parsing rules are intentionally conservative: unknown rare floor formats are flagged rather than silently misparsed.
 - Model features remain constrained by leakage rules: deposits and gratuity stay out, and parsing is done in code rather than by editing raw source files.
 
+## 2026-10-12: Decisions
+   - Stories: 0 failures after adding the 平屋 rule (213 rows → (1, 0)). The earlier 213 failures came from a parser version without that rule. Lesson: run failure counts before `to_numeric`, and re-run them after any reload.
+   - Floor: 1,004 missing = 997 `-` + 7 unparsed (`M9階` ×5, `9B9階` ×2), left as missing on purpose.
+
+   - H3 first look: median rent 新築 ¥108,000 vs 築1年 ¥115,000. Median area 27.17 vs 26.04 m². Median rent per m² ¥3,783 vs ¥4,177. No raw premium for 新築 (prediction not supported); size does not explain it. Likely location mix, untested. Decision: keep is_new, test in the ablation under grouped CV.
+- Area flags: 777 rows under 10 m², 22 rows over 300 m². Flag only, none removed.
