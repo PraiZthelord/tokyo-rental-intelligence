@@ -73,3 +73,21 @@ def parse_building_age(text):
     if m:
         return (int(m.group(1)), 0)
     return ("FAILED", None)
+
+# Room parser
+# parse_rooms(text) -> rooms as int
+# Examples "1K" -> 1, "2LDK" -> 2, "3LDK" -> 3 1SLDK-> 1,3K -> 3, ワンルーム -> 1R -> 1, 1DK->1 ,1S->1, 1SK->1 
+# Create Different Boolean columns like is_sk,is_ldk,is_r according to the room type.
+# Anything else -> ("FAILED", None)
+
+
+def parse_rooms(text):
+    s = unicodedata.normalize("NFKC", str(text)).strip()
+    if s in ("ワンルーム", "1R"):
+        return (1, 0, 0, 0, 0, 1)
+    m = re.fullmatch(r"(\d+)(S?)(L?)(D?)(K)", s)
+    if m:
+        n = int(m.group(1))
+        return (n, int(bool(m.group(3))), int(bool(m.group(4))),
+                1, int(bool(m.group(2))), 0)
+    return ("FAILED", None, None, None, None, None)

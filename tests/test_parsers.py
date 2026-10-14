@@ -82,3 +82,44 @@ def test_age_partial_match_rejected():
 
 def test_age_or_more():
     assert parse_building_age("築99年以上") == (99, 0)
+
+''' Write pytest tests for parse_rooms in src/parsers.py (file: tests/test_parsers.py).
+The function returns a 6-tuple: (n_rooms, has_L, has_D, has_K, has_S, is_1R).
+Failure returns ("FAILED", None, None, None, None, None). It never raises.
+
+#One test function per case, using assert ==:
+- "1K"    -> (1, 0, 0, 1, 0, 0)
+- "2DK"   -> (2, 0, 1, 1, 0, 0)
+- "2LDK"  -> (2, 1, 1, 1, 0, 0)
+- "1SK"   -> (1, 0, 0, 1, 1, 0)
+- "3SLDK" -> (3, 1, 1, 1, 1, 0)
+- "1LK"   -> (1, 1, 0, 1, 0, 0)
+- "2SLK"  -> (2, 1, 0, 1, 1, 0)
+- "ワンルーム" -> (1, 0, 0, 0, 0, 1)
+- "10SLDK" -> (10, 1, 1, 1, 1, 0)   (two-digit room count)
+- "２ＬＤＫ" (full-width) -> (2, 1, 1, 1, 0, 0)
+- " 2LDK " (spaces) -> (2, 1, 1, 1, 0, 0)
+
+Failure cases, each expecting the FAILED tuple:
+- "abc", "", "2LDKX" (trailing junk), "LDK" (no number), "2KL" (wrong letter order), "3R"
+
+Import with: from src.parsers import parse_rooms
+Do not modify parse_rooms. Do not add any test that is not listed.'''
+
+def test_parse_rooms_1K():
+    from src.parsers import parse_rooms
+    assert parse_rooms("1K") == (1, 0, 0, 1, 0, 0)
+    assert parse_rooms("2DK") == (2, 0, 1, 1, 0, 0)
+    assert parse_rooms("2LDK") == (2, 1, 1, 1, 0, 0)
+    assert parse_rooms("1SLDK") == (1, 1, 1, 1, 1, 0)
+    assert parse_rooms("1SK") == (1, 0, 0, 1, 1, 0)
+    assert parse_rooms("3SLDK") == (3, 1, 1, 1, 1, 0)
+    assert parse_rooms("1LK") == (1, 1, 0, 1, 0, 0)
+    assert parse_rooms("2SLK") == (2, 1, 0, 1, 1, 0)
+    assert parse_rooms("ワンルーム") == (1, 0, 0, 0, 0, 1)
+    assert parse_rooms("10SLDK") == (10, 1, 1, 1, 1, 0)
+    assert parse_rooms("２ＬＤＫ") == (2, 1, 1, 1, 0, 0)
+    assert parse_rooms(" 2LDK ") == (2, 1, 1, 1, 0, 0)
+
+
+    

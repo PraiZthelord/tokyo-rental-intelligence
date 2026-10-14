@@ -235,3 +235,8 @@ Note: The number before the letters tells you how many private bedrooms you have
 
    - H3 first look: median rent 新築 ¥108,000 vs 築1年 ¥115,000. Median area 27.17 vs 26.04 m². Median rent per m² ¥3,783 vs ¥4,177. No raw premium for 新築 (prediction not supported); size does not explain it. Likely location mix, untested. Decision: keep is_new, test in the ablation under grouped CV.
 - Area flags: 777 rows under 10 m², 22 rows over 300 m². Flag only, none removed.
+
+
+- Tiny fees (admin ¥1-2, deposit/gratuity ¥100) always sit beside normal values in the other fee columns, so they look like placeholder amounts, not real fees (inferred, unverifiable). Count: [n]. Flagged as flag_fee_tiny; to be treated as missing in the move-in cost calculator; not used as features.
+
+
