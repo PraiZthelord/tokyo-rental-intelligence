@@ -329,3 +329,29 @@ Three entry types, not one:
 Composite building key (normalized title + municipality + town + stories + age; add nearest-station string for auto-generated titles), then check distinct keys and largest group sizes.
 
 - Titles: 63,609 auto-generated (34.7%), 119,881 named (65.3%). Auto titles hold no building identity, so their key adds the raw station string and town; expect over-grouping (safe for CV, but check group sizes).
+
+### Composite building key
+- Key = normalized title | municipality | town | stories_above | stories_below; auto-generated titles (63,609 rows, 34.7%) also append the raw station string. Floor, rent, area, rooms, age and listing ID are excluded on purpose.
+- Result: 93,731 distinct keys for 183,490 rows (mean 1.96 units per key, median 1, 75th percentile 2, max 121).
+- Largest group (121 rows): [named complex or auto-title merge? result of the inspection].
+- Look-alike consistency check (same look-alike group, different key): [n, expect 0].
+- Distinct keys by type: auto [n], named [n]; max group size auto [n], named [n].
+- Known limitation: auto-titled rows can merge unrelated buildings (over-grouping). This is the safe direction for grouped CV but reduces effective independent groups.
+
+- Auto-title keys: 34,361 keys for 63,609 rows (mean 1.85, median 1, max 116). Named: ~59,370 keys for 119,881 rows. Similar grouping quality.
+- Largest auto group (116 rows): [rent/area spread, municipality count: merge or complex?].
+- Look-alike consistency (auto rows): [n, expect 0].
+- No-age variant: [nunique, consistency result, decision].
+
+
+- Building key results: 93,731 keys (auto 34,361, named 59,370). Look-alike consistency: 0 violations (all and auto rows).
+- Largest groups are real tower blocks (121, 115, 102 listings; 14 to 15 floors).
+- The 116-row auto group shares town, stories, median rent and area with the 121-row named group (南青山7, 15 floors): same building under two keys. Same pattern in 亀戸8. Finding: the named/auto split under-merges buildings (unsafe for CV).
+- Decision (pending test): compare current key vs coarse key (municipality|town|stories only); prefer the coarse key for GroupKFold. Count of base keys holding both title types: [n].
+
+
+### 2026-10-16: Grouping variable for CV
+- Fine key (title-based) under-merges: 13,476 of 22,843 municipality|town|stories combinations (59%) hold both named and auto-titled rows, so the same building can sit in two groups. Unsafe for grouped CV.
+- Decision: GroupKFold uses `group_coarse` = municipality|town|stories_above|stories_below (22,843 groups, over-merges, safe direction). `building_key` kept for same-building comparables.
+- Largest coarse group: [n rows, % of data].
+- Limitation: coarse groups merge distinct same-height buildings in one town, reducing independent groups, but protects against leakage.
