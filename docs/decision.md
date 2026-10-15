@@ -327,3 +327,5 @@ Three entry types, not one:
 
 ### Next
 Composite building key (normalized title + municipality + town + stories + age; add nearest-station string for auto-generated titles), then check distinct keys and largest group sizes.
+
+- Titles: 63,609 auto-generated (34.7%), 119,881 named (65.3%). Auto titles hold no building identity, so their key adds the raw station string and town; expect over-grouping (safe for CV, but check group sizes).

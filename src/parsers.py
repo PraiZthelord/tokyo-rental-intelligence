@@ -160,7 +160,3 @@ def parse_listing_title(title):
     return None
 
 
-
-# Define a parser to parse location with MUNICIPALITY imported from src/geo.py 
-# Run it on the column, then compare: df["municipality"].value_counts() should show 東村山市, 武蔁村山市 and 羽村市 spelled in full, the four 西多摩郡 towns split out, and 0 failures.
-
