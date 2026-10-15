@@ -142,3 +142,25 @@ def parse_station_entry(entry):
             "car_km": None
         }
     return None
+
+
+
+# Define a parser to parse listing title and check if the listing title = info of(Distances to railway station, stories tall, building age)columns using regex 
+# Example : parsing through this format "京王相模原線 京王よみうりランド駅 2階建 築14年	"
+def parse_listing_title(title):
+    s = unicodedata.normalize("NFKC", str(title)).strip()
+    m = re.fullmatch(r"([^/]+)/([^/]+) (\d+)階建 築(\d+)年", s)
+    if m:
+        return {
+            "line": m.group(1),
+            "station": m.group(2),
+            "stories": int(m.group(3)),
+            "building_age": int(m.group(4))
+        }
+    return None
+
+
+
+# Define a parser to parse location with MUNICIPALITY imported from src/geo.py 
+# Run it on the column, then compare: df["municipality"].value_counts() should show 東村山市, 武蔁村山市 and 羽村市 spelled in full, the four 西多摩郡 towns split out, and 0 failures.
+

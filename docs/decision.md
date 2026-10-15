@@ -251,3 +251,79 @@ Note: The number before the letters tells you how many private bedrooms you have
 
 - Area-per-room flag (under 6 m²): 47 rows. Mix of tiny ワンルーム units (3 to 5.8 m², rents consistent) and impossible layouts (2LDK at 5.10 m², 3LDK at 6.50 m², 1K at 1.00 m²; likely area typos, inferred). Replaced by flag_layout_area_conflict (n_rooms >= 2 and area < 15 m²); count: [n]. Nothing removed yet.
 
+## 2026-10-15: Madori, stations, walk-time features
+
+### Madori parser (`parse_rooms`)
+- Shapes found: K, DK, LDK, SK, SDK, SLDK, LK, SLK, ワンルーム (28,417 rows). No `1R` in the data.
+- Outputs: n_rooms, has_L, has_D, has_K, has_S, is_1R. **0 failures** on 183,490 rows.
+- Implausible room counts: `12SLDK` (38.5 m², ¥110,000) and `13K` (25.0 m², ¥73,000). Likely typos in the room digit (inferred, unverifiable). Kept, flagged.
+- Area-per-room flag (< 6 m²) caught 47 rows: a mix of tiny ワンルーム units (3 to 5.8 m², rents consistent) and impossible layouts (2LDK at 5.10 m², 3LDK at 6.50 m², 1K at 1.00 m²). Too blunt, so replaced by `flag_layout_area_conflict` (n_rooms >= 2 and area < 15 m²). Count: [n]. Nothing removed.
+
+### Station entry formats
+Three entry types, not one:
+| Mode | Example | Fields |
+|---|---|---|
+| walk | `西武新宿線/東伏見駅 歩3分` | walk_min |
+| bus | `JR中央線/三鷹駅 バス23分 (バス停)東伏見駅 歩3分` | bus_min, bus_stop_walk_min |
+| car | `JR常磐線/亀有駅 車14分(4.1km)` | car_min, car_km |
+
+- **Trap avoided:** the trailing `歩N分` on a bus entry is the walk to the bus stop, not to the station. Bus and car patterns are matched before walk, and `walk_min` stays None for bus entries (test added).
+- Stations per listing: 1 station 8,071 (4.4%), 2 stations 11,588 (6.3%), 3 stations 163,831 (89.3%). The site appears to cap the list at 3, so `n_stations` is nearly constant and likely a weak feature (relevant to H6).
+- Listings containing バス: 14,070 (7.7%); containing 車: 2,289 (1.2%).
+- Copilot's `parse_station_entry` kept `駅` in station names (my spec dropped it). Decision: keep `駅`, which is safer for joining external station data.
+- Tests: unit tests per mode plus `tests/test_real_data_stations.py` (every entry parses, entries per listing = commas + 1, bus never sets walk_min, mode counts match raw text). All pass.
+
+### Station long table
+- 522,728 rows for 183,490 listings. Matches the arithmetic exactly (8,071×1 + 11,588×2 + 163,831×3), so no entry was lost.
+- Modes: walk 502,023 (96.0%), bus 18,085, car 2,620.
+- Saved: `data/interim/stations_long.csv`, `data/interim/listings_parsed_v5.csv` (both gitignored).
+
+### Walk-time features
+- Built from **walk-mode rows only**: walk_min_nearest, walk_min_second, n_walk_stations, n_lines, walk_le_5/10/15, has_bus_access, has_car_access.
+- 1,665 listings (0.9%) have no walk entry (bus or car only): `no_walk_access = 1`, walk columns NaN. Count: [confirm = 183,490 - 181,825].
+- walk_min_nearest: median 7, mean 7.98, 75th percentile 10, max 202.
+- Extreme walks: 474 listings > 30 min, 4 listings > 60 min. The max (202 min, 用賀駅, ¥135,000) is not plausible as a walk (likely a source error or a very distant station listed as walking). Flagged with `flag_walk_extreme`, not deleted. Threshold to review; [count flagged].
+- Also noted: rows 159227 and 159228 are identical look-alikes (68-minute walk, ¥85,000), another example of the leakage risk handled by grouped CV.
+
+### Lessons
+- Failure counts must be run before `to_numeric` and re-run after any reload (the 213 `平屋` failures came from a stale saved file).
+- Check shapes (digit-to-9, sample strings) before writing a regex; samples revealed bus/car formats that would have corrupted walk time.
+
+### Open questions
+- [ ] Is the 202-minute walk a source error?
+- [ ] Do remote listings (bus/car only) need their own treatment in the model?
+- [ ] Count of `flag_layout_area_conflict` rows.
+
+## 2026-10-15: Location parsing and municipality features
+
+### Name clash (incident)
+- The parsed area column was assigned to `Area`, overwriting the raw location text. Noticed when `df["Area"].dtype` printed float.
+- Fix: renamed the numeric column to `area_m2`; restored the text as `location` by mapping `jnc` to the original `Area` from `listings_dedup.csv` (`map`, not `merge`, so row order and index, and therefore the station long table's `listing_idx`, stayed valid). Result: 0 missing locations, 183,490 rows.
+- Earlier results (H3 medians, area flags, top-rent table) used the numeric values, so they remain valid; only the labels were misleading.
+- Lesson: never reuse a raw column name for parsed output. Parsed columns get a suffix (`_yen`, `_m2`).
+
+### Lazy regex failure (caught before use)
+- A first-pass regex on `location` truncated names: 東村山市 → 東村, 武蔵村山市 → 武蔵村, 羽村市 → 羽村, and the four 西多摩郡 towns collapsed into `西多摩郡` (317 rows).
+- Decision: use a fixed list of Tokyo's 62 municipalities (`src/geo.py`, length checked = 62), match longest name first, skip an optional `…郡` prefix.
+
+### `parse_location`
+- Returns `(municipality, town)`, or `("FAILED", None)`; never raises. Tests in `tests/test_geo.py` (including the 62-name check).
+- First Copilot-style draft returned only the municipality, never stripped `東京都`, and had no 郡 handling; it would have failed every real row. Caught by the answer key.
+- Result: **0 failures** on 183,490 rows. **52 of 62** municipalities present.
+- Missing (10): 三宅村, 八丈町, 利島村, 大島町, 小笠原村, 御蔵島村, 新島村, 檜原村, 神津島村, 青ヶ島村 (nine island municipalities plus 檜原村). Interpretation: the dataset has no island listings and none for 檜原村. Coverage fact, not a parser bug. The model cannot be expected to generalize to these areas.
+- Previously truncated names now correct: 東村山市 1,877; 武蔵村山市 659; 羽村市 797.
+- 西多摩郡 split: 瑞穂町 232, 日の出町 82, 奥多摩町 3 (sum 317, matches the earlier count). 檜原村 absent.
+- Assumption: the 郡 skip looks only at the first 6 characters after 東京都. Verified by the 317 = 232 + 82 + 3 reconciliation.
+
+### Region features
+- `is_ward` (ends in 区) and `region` (ward / city / town_village). Counts: [paste `df["region"].value_counts()`]. Wards are [x]% of listings.
+
+### Open questions
+- [ ] Very small groups (奥多摩町 n=3, 日の出町 n=82): municipality-level target encoding will be noisy; use smoothing or fall back to region.
+- [ ] Composite building key: with and without `age_years` (age drifted between scrapes for the same listing).
+
+### Saved
+- `data/interim/listings_parsed_v6.csv` (gitignored)
+
+### Next
+Composite building key (normalized title + municipality + town + stories + age; add nearest-station string for auto-generated titles), then check distinct keys and largest group sizes.
