@@ -240,3 +240,14 @@ Note: The number before the letters tells you how many private bedrooms you have
 - Tiny fees (admin ¥1-2, deposit/gratuity ¥100) always sit beside normal values in the other fee columns, so they look like placeholder amounts, not real fees (inferred, unverifiable). Count: [n]. Flagged as flag_fee_tiny; to be treated as missing in the move-in cost calculator; not used as features.
 
 
+- Top rents: ¥4.45M (4SLDK, 365.51 m²) and the next four are all large units (218 to 415 m²) at ¥8,000 to ¥13,900 per m². Real luxury listings, not errors. Kept. Motivates H7 (log target) and per-price-band error reporting.
+- no_gratuity: median rent ¥69,000 with `-` vs ¥91,000 with key money. Consistent with `-` meaning "none" (provisional). Age check: [result].
+
+- Madori parser: 0 failures on 183,490 rows. Shapes: K, DK, LDK, SK, SDK, SLDK, LK, SLK, ワンルーム (28,417). No `1R` in the data. Outputs: n_rooms, has_L/D/K/S, is_1R.
+- 12SLDK at 38.5 m² (¥110,000) is implausible; flagged via area-per-room, not deleted. Count flagged: [n].
+
+
+- Two rows with impossible room counts: 12SLDK (38.5 m², ¥110,000) and 13K (25.0 m², ¥73,000). Likely typos in the room digit (inferred). Kept, flagged via flag_rooms_implausible (area per room under 6 m², threshold to be reviewed). Count flagged: [n].
+
+- Area-per-room flag (under 6 m²): 47 rows. Mix of tiny ワンルーム units (3 to 5.8 m², rents consistent) and impossible layouts (2LDK at 5.10 m², 3LDK at 6.50 m², 1K at 1.00 m²; likely area typos, inferred). Replaced by flag_layout_area_conflict (n_rooms >= 2 and area < 15 m²); count: [n]. Nothing removed yet.
+
