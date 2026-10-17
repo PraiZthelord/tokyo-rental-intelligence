@@ -355,3 +355,20 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Decision: GroupKFold uses `group_coarse` = municipality|town|stories_above|stories_below (22,843 groups, over-merges, safe direction). `building_key` kept for same-building comparables.
 - Largest coarse group: [n rows, % of data].
 - Limitation: coarse groups merge distinct same-height buildings in one town, reducing independent groups, but protects against leakage.
+
+
+### 2026-10-17: Evaluation function and dummy baseline
+- `evaluate_model`: clones model per fold, fits on train indices only, asserts no group overlap for GroupKFold, returns per-fold MAE/RMSE/R².
+- Dummy (median): KFold MAE 37,946 ± 362, RMSE 79,368, R² -0.05. GroupKFold MAE 37,948 ± 948, RMSE 79,223, R² -0.05.
+- Dummy is identical under both splitters and R² ≈ 0, so the evaluation loop shows no leakage. Floor for all later models: MAE ≈ ¥37,950.
+- RMSE is about 2x MAE: right-skewed target (supports H7).
+
+
+- Municipality median: KFold MAE 32,059 ± 280, RMSE 71,371, R² 0.15. GroupKFold MAE 32,186 ± 831, RMSE 71,298, R² 0.15.
+- Beats dummy by ~¥5,800 MAE; municipality alone explains ~15% of variance.
+- KFold vs GroupKFold gap ≈ ¥126 (within noise): expected, since the model can't memorize buildings. H5 untested until models with area/age/floor features run.
+
+
+- Linear regression (area, age, floor, stories, walk time + one-hot municipality; fold-safe median imputation with indicators): KFold MAE 20,188 ± 101, RMSE 42,455, R² 0.70. GroupKFold MAE 20,276 ± 499, RMSE 42,478, R² 0.70.
+- Guess was 26k; actual 20.2k. Beats municipality median by ~¥12,000.
+- KFold vs GroupKFold gap ≈ ¥88 (noise): linear model cannot memorize buildings. H5 still untested.
