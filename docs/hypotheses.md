@@ -12,7 +12,19 @@ Grouping variable for all grouped CV: `group_coarse` = municipality|town|stories
 | H5 | Random-split CV overstates performance vs grouped CV | Random MAE noticeably lower | Same model, shuffled `KFold` vs `GroupKFold` on `group_coarse` | Gap larger than fold-to-fold variation | **Supported (strongly for trees).** Random Forest: KFold MAE ¥7,240 ± 92 vs GroupKFold ¥12,108 ± 243 (gap +¥4,868, +67%). XGBoost: ¥9,691 ± 136 vs ¥11,303 ± 200 (gap +¥1,612, +17%). Linear: ¥20,188 vs ¥20,276 (gap ≈ ¥88, noise). Gap is ~20x the fold std for RF. Ranking flips: RF wins under KFold, XGBoost wins under GroupKFold. | Use GroupKFold on `group_coarse` as the yardstick for all later ablations and model choice. Report both splits in the write-up. |
 1% of rows are look-alikes (identical except listing ID). Fine `building_key` under-merges (13,476 of 22,843 municipality|town|stories combos hold both named and auto-titled rows), so the coarse key is the grouping variable. | Run baselines |
 | H6 | Multiple station access adds information beyond nearest-station walk time | Weak: `n_walk_stations` is nearly constant (89% have 3); `n_lines` and `has_bus_access` may carry more | Ablation with n_walk_stations, n_lines, has_bus_access | MAE improvement beyond noise | Pending | Run ablation |
-| H7 | log(rent) target beats raw rent | Better RMSE and on expensive listings | Same model, both targets, compare on original scale | Lower MAE on original scale | Pending. Motivation: right-skewed rent (mean ¥99,317 vs median ¥82,500; max ¥4.45M real luxury units). | Run comparison |
+### H7 results (GroupKFold, scored in yen)
+| Model | MAE | RMSE | R² |
+|---|---|---|---|
+| Linear | 20,276 ± 499 | 42,478 | 0.70 |
+| Linear (log target, clipped) | 15,181 ± 917 | 78,633 | -0.04 |
+| Linear (log area) | 22,374 ± 469 | 50,899 | 0.57 |
+| Linear (log area + log target) | 12,924 ± 483 | 39,627 | 0.74 |
+| XGBoost | 11,303 ± 200 | 32,264 | 0.83 |
+| XGBoost (log target) | 11,042 ± 209 | 31,646 | 0.83 |
+
+- Log target alone explodes for linear (extrapolation on 340-560 m² units, expm1 amplifies). Log area alone hurts. Together: -36% MAE vs plain linear.
+- XGBoost log gain (-261 MAE) is ~1.3x fold std: not decisive.
+- Guess for linear(log): "big gain"; the reality needed the paired log area fix.
 | H8 | Deposit and key money are multiples of rent, so they leak the target | Confirmed | Distribution in months of rent | ~90% at exactly 1 month | **Confirmed.** Deposit 90.0% and gratuity 90.1% at 1 month. | Excluded from features |
 | H9 | The 新築 rent gap is explained by location mix | 新築 listings skew toward cheaper municipalities | Compare municipality distribution of age 0 vs 1; rent per m² within municipality | Gap shrinks or reverses within municipality | Pending. `municipality` now available. | Run check |
 | H10 | Remote listings (bus/car access only) rent differently from walkable ones | Lower rent per m² | Compare `no_walk_access` (1,665 listings, 0.9%) vs rest, within municipality | Difference persists within municipality | Pending | Run check |

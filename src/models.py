@@ -119,3 +119,40 @@ xgb_pipe = Pipeline([
     ('regressor', XGBRegressor(n_estimators=400, learning_rate=0.1, max_depth=6,
                                n_jobs=-1, random_state=0, tree_method="hist",device="cuda"))
 ])
+
+
+
+
+
+# Build linear_logarea in src/models.py: a copy of linear_pipe where area_m2 is log-transformed.
+# Imports: Pipeline, ColumnTransformer, SimpleImputer, StandardScaler, OneHotEncoder,
+#          FunctionTransformer, LinearRegression, numpy as np.
+#
+# ColumnTransformer transformers:
+#   ("area", Pipeline([("log", FunctionTransformer(np.log, feature_names_out="one-to-one")),
+#                      ("scaler", StandardScaler())]), ["area_m2"])
+#   ("num", Pipeline([SimpleImputer(strategy="median", add_indicator=True), StandardScaler()]),
+#       ["age_years", "floor_min", "stories_above", "walk_min_nearest"])   # area_m2 removed here
+#   ("cat", OneHotEncoder(handle_unknown="ignore"), ["municipality"])
+# Final step: LinearRegression().
+# Name the pipeline linear_logarea. Do not modify linear_pipe.
+# Everything learned stays inside the pipeline. Do not transform df outside it.
+
+from sklearn.preprocessing import FunctionTransformer
+import numpy as np
+linear_logarea = Pipeline([
+    ('preprocessor', ColumnTransformer(
+        transformers=[
+            ('area', Pipeline([
+                ('log', FunctionTransformer(np.log, feature_names_out="one-to-one")),
+                ('scaler', StandardScaler())
+            ]), ["area_m2"]),
+            ('num', Pipeline([
+                ('imputer', SimpleImputer(strategy="median", add_indicator=True)),
+                ('scaler', StandardScaler())
+            ]), ["age_years", "floor_min", "stories_above", "walk_min_nearest"]),
+            ('cat', OneHotEncoder(handle_unknown="ignore"), ["municipality"])
+        ]
+    )),
+    ('regressor', LinearRegression())
+])

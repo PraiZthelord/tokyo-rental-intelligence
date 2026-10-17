@@ -387,6 +387,23 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Rent vs area (log-log): [one sentence; log-log correlation = ...].
 - Walk time vs rent: [shape; do bumps at 9 and 11 min persist on large counts?]. Raw medians, confounded by location.
 - Age vs rent: [shape; dip at age 0?; any step near 44-45?]. Counts thin at old ages; 1981 line approximate because scrape date is unknown.
+### EDA observations (2026-10-17)
+- Rent is strongly right-skewed (tail to ¥4.45M); log rent is near-normal, centred ~11.3. Supports H7.
+- Rent vs area (log-log): clear linear band, spread roughly constant on the log scale (errors proportional to rent). Tiny units (<10 m²) form a vertical streak.
+- Median rent by municipality: ~3x spread, ¥150k (中央区) to ¥50-60k (outer Tama). 奥多摩町 has n=3, ignore.
+- Median rent by age: falls from ¥115k (age 1) to ~¥60k (age 30-37), then rebounds to ~¥70k at 40-45. Age 0 (¥108k) is below age 1. No step at the 1981 line in raw medians; the rebound is probably composition (central old buildings), so H4 is not decided by this plot. Counts are thin beyond 60 years (spike at 79 is noise).
+- Implication: age is non-monotonic, so the linear model needs a spline or bins; trees can learn it directly.
 
-### Next
-Ablations (H1, H2, H4, H6) with XGBoost under GroupKFold as the yardstick, and the linear model with splines where tree models can already learn nonlinearity. Then H7 (log target) and per-price-band errors.
+
+### Walk time vs rent (first look, raw medians, 1-20 min)
+- Median falls from ¥100,000 (1 min) to ¥68,000 (20 min). Steepest early (~¥3,300/min for 1-5 min), nearly flat from 12 min on (~¥500/min). Consistent with the H1 prediction, but not a test.
+- Listing counts peak at 5 min (21,892), with secondary peaks at 7 and 10 and dips at 6 and 9: walk times appear partly reported in round steps.
+- Bumps at 6, 9 and 11 min do not coincide with tiny counts (n at 9 is 11,777), so "noise" is not the explanation; location mix is suspected, untested.
+- Confounded by municipality; H1 decided only by the ablation under GroupKFold.
+
+
+- H7 first run (GroupKFold, scored in yen): Linear 20,276 vs Linear(log) 21,570 (RMSE 916k, R² -368: a few extreme predictions after expm1). XGBoost 11,303 vs XGBoost(log) 11,042 (-2.3%, ~1.3x fold std: marginal).
+- Linear(log) failure under investigation: [worst rows and cause]. Guess was a big gain for linear; wrong.
+
+- Linear(log) failure cause: the ten worst predictions are all very large units (341 to 563 m²), predicted up to ¥650M (true ¥2.3M). Linear log model extrapolates in log space and expm1 amplifies it; MAE barely moved (21,570) while RMSE exploded (916k). Rows are real luxury units, so not removed. XGBoost is immune (trees cannot extrapolate).
+- Fix tested: [log(area) feature / clip / winsorize], result: [...].
