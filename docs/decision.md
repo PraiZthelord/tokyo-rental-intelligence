@@ -372,3 +372,10 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Linear regression (area, age, floor, stories, walk time + one-hot municipality; fold-safe median imputation with indicators): KFold MAE 20,188 ± 101, RMSE 42,455, R² 0.70. GroupKFold MAE 20,276 ± 499, RMSE 42,478, R² 0.70.
 - Guess was 26k; actual 20.2k. Beats municipality median by ~¥12,000.
 - KFold vs GroupKFold gap ≈ ¥88 (noise): linear model cannot memorize buildings. H5 still untested.
+
+is_ward and region were created but not persisted; recreated in the EDA notebook.
+
+
+- Random Forest: KFold MAE 7,240 ± 92, RMSE 23,681, R² 0.91. GroupKFold MAE 12,108 ± 243, RMSE 29,142, R² 0.86.
+- XGBoost: KFold MAE 9,691 ± 136, RMSE 27,879, R² 0.87. GroupKFold MAE 11,303 ± 200, RMSE 32,264, R² 0.83.
+- H5 supported: RF gap +¥4,868 (67%), XGBoost +¥1,612 (17%); linear gap ~¥88. Random CV overstates tree-model performance; ranking flips between splits.
