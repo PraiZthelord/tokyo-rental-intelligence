@@ -357,25 +357,36 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Limitation: coarse groups merge distinct same-height buildings in one town, reducing independent groups, but protects against leakage.
 
 
-### 2026-10-17: Evaluation function and dummy baseline
-- `evaluate_model`: clones model per fold, fits on train indices only, asserts no group overlap for GroupKFold, returns per-fold MAE/RMSE/R².
-- Dummy (median): KFold MAE 37,946 ± 362, RMSE 79,368, R² -0.05. GroupKFold MAE 37,948 ± 948, RMSE 79,223, R² -0.05.
-- Dummy is identical under both splitters and R² ≈ 0, so the evaluation loop shows no leakage. Floor for all later models: MAE ≈ ¥37,950.
-- RMSE is about 2x MAE: right-skewed target (supports H7).
+## 2026-10-17: Baselines, CV comparison, EDA
 
+### Evaluation setup
+- `evaluate_model`: clones the model per fold, fits on train indices only, asserts no group overlap for GroupKFold, returns per-fold MAE / RMSE / R².
+- Splits: shuffled `KFold(5, random_state=0)` and `GroupKFold(5)` on `group_coarse` (22,843 groups).
+- Features: area_m2, age_years, floor_min, stories_above, walk_min_nearest, municipality. Target: Price_yen.
+- Excluded: deposit, gratuity and their derived columns (leakage), IDs, raw text, flag columns, building keys.
+- Preprocessing lives inside pipelines so imputers, scalers and encoders are fitted per training fold only.
+- Small bugs caught: GroupKFold run without `groups=` (would have been a fake grouped result); mislabelled `Split:` print line; `is_ward` and `region` were never persisted to the interim file.
 
-- Municipality median: KFold MAE 32,059 ± 280, RMSE 71,371, R² 0.15. GroupKFold MAE 32,186 ± 831, RMSE 71,298, R² 0.15.
-- Beats dummy by ~¥5,800 MAE; municipality alone explains ~15% of variance.
-- KFold vs GroupKFold gap ≈ ¥126 (within noise): expected, since the model can't memorize buildings. H5 untested until models with area/age/floor features run.
+### Results (guess -> actual)
+| Model | KFold MAE | GroupKFold MAE | Gap | R² (K / G) | My guess |
+|---|---|---|---|---|---|
+| Dummy (median) | 37,946 ± 362 | 37,948 ± 948 | ~0 | -0.05 | n/a |
+| Municipality median | 32,059 ± 280 | 32,186 ± 831 | 127 | 0.15 | ~55k (too high; cannot be worse than dummy) |
+| Linear regression | 20,188 ± 101 | 20,276 ± 499 | 88 | 0.70 / 0.70 | ~26k |
+| Random Forest | 7,240 ± 92 | 12,108 ± 243 | 4,868 (+67%) | 0.91 / 0.86 | ~15k |
+| XGBoost | 9,691 ± 136 | 11,303 ± 200 | 1,612 (+17%) | 0.87 / 0.83 | ~15k |
 
+- Dummy is identical under both splitters with R² ~ 0, so the evaluation loop shows no leakage.
+- Random-split CV overstates tree performance; the ranking flips between splits (RF wins KFold, XGBoost wins GroupKFold). Model choice uses GroupKFold.
+- RMSE is about 2.5x MAE even under grouping: the luxury tail is the hard part (supports H7).
+- Caveat: `group_coarse` may still leak slightly; defaults only, no tuning yet.
+- Runtimes: [XGBoost: ... min, RF: ... min]. Hardware: i5-12400, 16 GB RAM, [GPU model].
+- Shuffled-target check (XGBoost, KFold): R² = [..., expect ~0].
 
-- Linear regression (area, age, floor, stories, walk time + one-hot municipality; fold-safe median imputation with indicators): KFold MAE 20,188 ± 101, RMSE 42,455, R² 0.70. GroupKFold MAE 20,276 ± 499, RMSE 42,478, R² 0.70.
-- Guess was 26k; actual 20.2k. Beats municipality median by ~¥12,000.
-- KFold vs GroupKFold gap ≈ ¥88 (noise): linear model cannot memorize buildings. H5 still untested.
+### EDA observations
+- Rent vs area (log-log): [one sentence; log-log correlation = ...].
+- Walk time vs rent: [shape; do bumps at 9 and 11 min persist on large counts?]. Raw medians, confounded by location.
+- Age vs rent: [shape; dip at age 0?; any step near 44-45?]. Counts thin at old ages; 1981 line approximate because scrape date is unknown.
 
-is_ward and region were created but not persisted; recreated in the EDA notebook.
-
-
-- Random Forest: KFold MAE 7,240 ± 92, RMSE 23,681, R² 0.91. GroupKFold MAE 12,108 ± 243, RMSE 29,142, R² 0.86.
-- XGBoost: KFold MAE 9,691 ± 136, RMSE 27,879, R² 0.87. GroupKFold MAE 11,303 ± 200, RMSE 32,264, R² 0.83.
-- H5 supported: RF gap +¥4,868 (67%), XGBoost +¥1,612 (17%); linear gap ~¥88. Random CV overstates tree-model performance; ranking flips between splits.
+### Next
+Ablations (H1, H2, H4, H6) with XGBoost under GroupKFold as the yardstick, and the linear model with splines where tree models can already learn nonlinearity. Then H7 (log target) and per-price-band errors.

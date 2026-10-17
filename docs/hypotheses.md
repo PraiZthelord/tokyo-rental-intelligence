@@ -16,6 +16,7 @@ Grouping variable for all grouped CV: `group_coarse` = municipality|town|stories
 | H8 | Deposit and key money are multiples of rent, so they leak the target | Confirmed | Distribution in months of rent | ~90% at exactly 1 month | **Confirmed.** Deposit 90.0% and gratuity 90.1% at 1 month. | Excluded from features |
 | H9 | The 新築 rent gap is explained by location mix | 新築 listings skew toward cheaper municipalities | Compare municipality distribution of age 0 vs 1; rent per m² within municipality | Gap shrinks or reverses within municipality | Pending. `municipality` now available. | Run check |
 | H10 | Remote listings (bus/car access only) rent differently from walkable ones | Lower rent per m² | Compare `no_walk_access` (1,665 listings, 0.9%) vs rest, within municipality | Difference persists within municipality | Pending | Run check |
+| H11 | Tree models beat linear models even under grouped CV because of nonlinearity and interactions | XGBoost MAE well below linear under GroupKFold | Compare model families under GroupKFold | Gap larger than fold std | **Supported.** ¥11,303 (XGBoost) and ¥12,108 (RF) vs ¥20,276 (linear) | Motivates the H1/H2 ablations with XGBoost as the yardstick |
 
 ## Already resolved (data-audit findings)
 - `jnc` and `bc` are listing IDs, not building IDs (repeats match exact duplicates).
@@ -26,4 +27,6 @@ Grouping variable for all grouped CV: `group_coarse` = municipality|town|stories
 - `no_gratuity` rows have lower median rent (¥69,000 vs ¥91,000), consistent with `-` meaning "none" (provisional).
 - Top rents (¥3M+) are real luxury units (218 to 415 m²), not errors.
 - Title-based building key under-merges (same tower appears under a named key and an auto-title key), so grouped CV uses the coarse key.
+- Random-split CV is optimistic for models that can memorize (RF gap +67%), but not for linear models. Model selection under random CV would have picked the wrong model (RF instead of XGBoost).
+- Caveat: `group_coarse` may still leak slightly (same building under a different town or stories value), so grouped scores could be mildly optimistic. Defaults only, no tuning yet.
 
