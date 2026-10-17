@@ -29,4 +29,3 @@ Grouping variable for all grouped CV: `group_coarse` = municipality|town|stories
 - Title-based building key under-merges (same tower appears under a named key and an auto-title key), so grouped CV uses the coarse key.
 - Random-split CV is optimistic for models that can memorize (RF gap +67%), but not for linear models. Model selection under random CV would have picked the wrong model (RF instead of XGBoost).
 - Caveat: `group_coarse` may still leak slightly (same building under a different town or stories value), so grouped scores could be mildly optimistic. Defaults only, no tuning yet.
-
