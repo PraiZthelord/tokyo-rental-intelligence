@@ -6,6 +6,17 @@ Grouping variable for all grouped CV: `group_coarse` = municipality|town|stories
 | # | Hypothesis | Prediction | Test | Success criterion | Result | Decision |
 |---|---|---|---|---|---|---|
 | H1 | Walk time has a nonlinear relationship with rent | Rent drops faster in the first ~10 min, then flattens | Raw `walk_min_nearest` vs spline/threshold terms (5, 10, 15 min), grouped CV | Lower MAE than raw term, beyond CV noise | **First look only, not tested.** Raw median rent falls from ¥100,000 (1 min) to ¥69,000 (15 min), about ¥2,200/min. Plateau at 2-4 min; bumps at 9 and 11 min (likely noise or location mix). Confounded by location. | Run ablation under grouped CV |
+### H1/H4 on linear (log area + log target, GroupKFold paired folds; base 12,924)
+| Run | MAE | Diff | Std | Folds |
+|---|---|---|---|---|
+| walk spline | 12,898 | -27 | 17 | 5/5 |
+| walk flags 5/10/15 | 12,910 | -14 | 15 | 3/5 |
+| age spline | 12,765 | -159 | 12 | 5/5 |
+| age>=45 flag, linear age | 12,863 | -61 | 9 | 5/5 |
+| age spline + age>=45 | 12,766 | -158 | 12 | 5/5 |
+- 45+ segment MAE: spline 11,593 vs spline+flag 11,591.
+- H1: nonlinear walk time detectable but negligible (-0.2%); threshold flags do not help.
+- H4: age is strongly nonlinear (-1.2%), but the 45-year flag adds nothing beyond a smooth curve (+0.4). No 1981 step detected; low power (4% of rows) and approximate age.
 | H2 | Structured madori adds information beyond floor area | Helps most for small units (1R to 1LDK) | Ablation: area-only vs area + n_rooms, has_L/D/K/S, is_1R | MAE improvement with CI excluding 0 | Pending. Parser done (0 failures, 183,490 rows). | Run ablation |
 - H2 (XGBoost, GroupKFold, paired folds): base 11,303 vs +madori 11,179; diff -123 ± 94, 5/5 folds improved. Guess: -100 to -300. Verdict: small, consistent gain (~1.1%); not yet confirmed with repeated shuffles. Likely limited by area/room-count correlation.
 | H3 | New builds (新築) carry a rent premium beyond age 0 vs 1 | Median rent 新築 > 築1年 | Compare medians, then `is_new` ablation | Premium persists after controlling for area and location | **First look: not supported.** Median rent ¥108,000 (新築) vs ¥115,000 (築1年). Median area 27.17 vs 26.04 m². Rent per m² ¥3,783 vs ¥4,177. Size does not explain it; location mix suspected (untested). | Keep `is_new`; decide after ablation |
