@@ -407,3 +407,15 @@ Composite building key (normalized title + municipality + town + stories + age; 
 
 - Linear(log) failure cause: the ten worst predictions are all very large units (341 to 563 m²), predicted up to ¥650M (true ¥2.3M). Linear log model extrapolates in log space and expm1 amplifies it; MAE barely moved (21,570) while RMSE exploded (916k). Rows are real luxury units, so not removed. XGBoost is immune (trees cannot extrapolate).
 - Fix tested: [log(area) feature / clip / winsorize], result: [...].
+
+
+
+### Ablations (XGBoost, GroupKFold paired folds; base MAE 11,303)
+| Group | Diff | Folds improved | Verdict |
+|---|---|---|---|
+| + is_new | +17 ± 34 | 2/5 | no effect (age already encodes it) |
+| + madori | -123 ± 94 | 5/5 | small consistent gain (~1.1%) |
+| + station extras | -54 ± 161 | 3/5 | noise |
+| + age>=45 flag | 0.0 ± 0.0 | 0/5 | identical: trees can already split at 45; untestable for XGBoost |
+| + extras | +101 ± 128 | 2/5 | no gain |
+- H2 weakly supported; H3 and H6 not supported for XGBoost; H4 needs the linear-model test.
