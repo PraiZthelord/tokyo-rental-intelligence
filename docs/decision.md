@@ -427,3 +427,19 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Area: <20 5,541 (8.4%); 20-30 7,989 (7.7%); 30-50 10,539 (7.9%); 50-80 17,928 (9.3%); >80 67,724 (12.7%, n=4,805).
 - Finding: relative error is ~8% almost everywhere; absolute error scales with rent. Large units and luxury are hardest. Banding by true rent exaggerates luxury errors.
 - Decision: intervals must be proportional to price (log-scale quantiles or conformal on log residuals); check coverage per band.
+
+### Quantile intervals (XGBoost on log rent, 10/50/90, GroupKFold, features base + madori)
+- Overall coverage 79.9% (target 80%); folds 79.0 to 80.7%. Median width 39.8% of predicted rent (mean 41.3%). MAE of the median model: 13,037 (the log-target quantile model is a bit worse than the mean model, 11,179).
+- Guess: width ~24%; actual ~40%. The 80% interval covers the tail of errors, not the median error.
+- Under-coverage: >150k 68.4%, >80 m² 74.4%, town_village 28.7% (n=317, unreliable).
+- Over-coverage: 80-150k 83.9%.
+- Decision: test Mondrian conformal calibration by predicted-price band; add coverage by predicted band. Valuation flag will use the interval; luxury and town_village flagged as low-confidence. 
+
+
+### Mondrian CQR calibration (log space, bands by predicted rent, GroupKFold; calibration slice 20% of each training fold, grouped by group_coarse)
+- Overall coverage 79.9% -> 80.2%; median width 39.8% -> 40.2%. Folds 79.3-81.4%.
+- Coverage by predicted band: <80k 79.8%, 80-150k 80.7%, >150k 73.4% -> 80.2% (width 39.0% -> 46.2%).
+- By TRUE band, >150k only 68.4% -> 73.1% (conformal guarantees coverage by predicted band, not true rent; selection effect).
+- >80 m²: 74.4% -> 77.9%. City 76.3%, town_village 28.1% (n=317): not fixed by price-band calibration.
+- Decision: use calibrated intervals; flag only when asking rent is outside; low-confidence label for town_village and >80 m².
+- Cost: quantile models fit on 80% of each training fold.
