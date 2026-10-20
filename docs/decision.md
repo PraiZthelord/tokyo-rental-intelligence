@@ -419,3 +419,11 @@ Composite building key (normalized title + municipality + town + stories + age; 
 | + age>=45 flag | 0.0 ± 0.0 | 0/5 | identical: trees can already split at 45; untestable for XGBoost |
 | + extras | +101 ± 128 | 2/5 | no gain |
 - H2 weakly supported; H3 and H6 not supported for XGBoost; H4 needs the linear-model test.
+
+
+### Per-band error (XGBoost + madori, GroupKFold OOF; overall MAE 11,179)
+- Price band: <80k MAE 5,984 (median % err 8.1%); 80-150k 10,529 (7.9%); >150k 35,313 (9.9%).
+- Region: ward 13,002 (8.1%), city 7,401 (8.4%), town_village 6,409 (7.6%, n=317).
+- Area: <20 5,541 (8.4%); 20-30 7,989 (7.7%); 30-50 10,539 (7.9%); 50-80 17,928 (9.3%); >80 67,724 (12.7%, n=4,805).
+- Finding: relative error is ~8% almost everywhere; absolute error scales with rent. Large units and luxury are hardest. Banding by true rent exaggerates luxury errors.
+- Decision: intervals must be proportional to price (log-scale quantiles or conformal on log residuals); check coverage per band.
