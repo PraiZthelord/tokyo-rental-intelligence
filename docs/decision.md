@@ -443,3 +443,18 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - >80 m²: 74.4% -> 77.9%. City 76.3%, town_village 28.1% (n=317): not fixed by price-band calibration.
 - Decision: use calibrated intervals; flag only when asking rent is outside; low-confidence label for town_village and >80 m².
 - Cost: quantile models fit on 80% of each training fold.
+
+
+### Comparables
+- Same-building (excl. self and look-alike twins, min 3): 34.4% of listings have a result (n=5,000 sample), median 8 comparables. MAPE 5.5% in-sample, optimistic (same group_coarse group), not comparable to out-of-group errors. Guess for availability was 35-45%.
+- Nearest-neighbour (same municipality, k=10, log area/age/walk/rooms/stories, fitted per training fold, GroupKFold): MAE 12,488, median % error 9.2% vs XGBoost OOF 11,179 (~8%). Guess ¥14-18k was too pessimistic.
+- p25-p75 range contains the true rent only 34.0% of the time: label as "range of similar listings", not a probability. The calibrated model interval carries the coverage statement.
+
+
+### Relative valuation (calibrated intervals + NN comparables, all out-of-fold)
+- Overall: above 9.72%, within 80.23%, below 10.05%.
+- Regional bias: ward above 12.6% / below 5.2%; city 3.8% / 19.9%; town_village 0% / 71.9% (n=317, flag suppressed). Area >80 m²: above 17.7%.
+- Agreement with comparables: model "above" -> comps above 80.1% (opposite 3.3%); model "below" -> comps below 73.0% (opposite 6.0%).
+- Guess for agreement 50-65%: too low for flagged rows.
+- Limitation: asking rent only; no renovation, orientation, structure, negotiation. Labels never say "overpriced".
+- Next: calibrate by region x price band; re-check bias.
