@@ -458,3 +458,16 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Guess for agreement 50-65%: too low for flagged rows.
 - Limitation: asking rent only; no renovation, orientation, structure, negotiation. Labels never say "overpriced".
 - Next: calibrate by region x price band; re-check bias.
+
+
+
+### XGBoost randomized search (25 trials, GroupKFold, 4.5 min on GPU)
+- Untuned 11,179 -> best tuned 10,967 (-212, 1.9%). Top 5 within ~100 of each other (fold std 160-230): plateau, ranking is noise. Tuned score slightly optimistic (selected on the same folds).
+- Guess 3-6% gain; actual 1.9%.
+- Best params: [paste]. Paired-fold check vs untuned: [diff, std, folds improved].
+- Decision: adopt rank-1 params if 5/5 folds improve; calibration must be rerun with them.
+
+### Tuned XGBoost (adopted)
+- Params: colsample_bytree 0.698, learning_rate 0.0407, max_depth 9, min_child_weight 6, n_estimators 860, reg_lambda 1.12, subsample 0.679.
+- GroupKFold MAE 10,967 vs untuned 11,179: diff -212 ± 97, 5/5 folds. Gain 1.9% (guess was 3-6%). Slightly optimistic (selected on the same folds). Top-5 settings within ~100 of each other.
+- Calibration must be rerun with these params.
