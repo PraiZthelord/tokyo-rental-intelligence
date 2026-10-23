@@ -25,3 +25,4 @@ def test_bad_input():
     import pytest
     with pytest.raises(ValueError):
         valuate({**SETAGAYA, "area_m2": 0})
+

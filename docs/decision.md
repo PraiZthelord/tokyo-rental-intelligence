@@ -478,3 +478,12 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - In-sample MAE 7,472 is a sanity check only; the honest score is GroupKFold MAE 10,967.
 - Bug caught: example intervals added the log-space q to yen values (zero-width intervals). Fixed by building intervals in log space, then expm1.
 - valuate(attrs, asking_rent) returns the q50 estimate, calibrated 80% interval, band, confidence, and label (never "overpriced"). 6 tests pass, including a match to the notebook to within 1 yen.
+
+
+
+### Valuation table (OOF calibrated intervals + NN comps)
+- 183,490 rows, no NaN in estimate/lo/hi. Position: within 79.9%, above 10.1%, below 10.0%.
+- Incident: first build used municipality-level tables for intervals and comps (coverage 51%, comp_n = municipality counts). Caught by checking position shares against the known 80% coverage and by comp_n.max(). Rebuilt from per-listing files; asserts added.
+- comp_n is ~10 for nearly every row (k=10), so it is not a useful confidence signal. Low confidence (2.79%) comes from town_village and >80 m² only.
+
+- Recommender top-20 on a real query was dominated by one 足立区 building (7 units, same estimate) and 13 rows at the gap clip. Cause: lookalike dedup misses same-building units with slightly different rent; extreme gaps are model error. Fix: one row per building_key, gap cutoff, extra duplicate rule.
