@@ -471,3 +471,10 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Params: colsample_bytree 0.698, learning_rate 0.0407, max_depth 9, min_child_weight 6, n_estimators 860, reg_lambda 1.12, subsample 0.679.
 - GroupKFold MAE 10,967 vs untuned 11,179: diff -212 ± 97, 5/5 folds. Gain 1.9% (guess was 3-6%). Slightly optimistic (selected on the same folds). Top-5 settings within ~100 of each other.
 - Calibration must be rerun with these params.
+
+
+### Final model export (2026-10-22)
+- Mean model (all rows) and q10/q50/q90 quantile models (80% fit slice, grouped by group_coarse) saved to models/ (gitignored). Calibration q (log space): <80k 0.0196, 80-150k 0.0220, >150k 0.0534.
+- In-sample MAE 7,472 is a sanity check only; the honest score is GroupKFold MAE 10,967.
+- Bug caught: example intervals added the log-space q to yen values (zero-width intervals). Fixed by building intervals in log space, then expm1.
+- valuate(attrs, asking_rent) returns the q50 estimate, calibrated 80% interval, band, confidence, and label (never "overpriced"). 6 tests pass, including a match to the notebook to within 1 yen.
