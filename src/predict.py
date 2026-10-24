@@ -44,10 +44,16 @@ _ARTIFACTS = {}
 
 def _load_artifacts():
 	if not _ARTIFACTS:
+		q10 = joblib.load(MODELS_DIR / "xgb_q10.joblib")
+		q10.named_steps["reg"].set_params(device="cpu")
+		q50 = joblib.load(MODELS_DIR / "xgb_q50.joblib")
+		q50.named_steps["reg"].set_params(device="cpu")
+		q90 = joblib.load(MODELS_DIR / "xgb_q90.joblib")
+		q90.named_steps["reg"].set_params(device="cpu")
 		_ARTIFACTS.update(
-			q10=joblib.load(MODELS_DIR / "xgb_q10.joblib"),
-			q50=joblib.load(MODELS_DIR / "xgb_q50.joblib"),
-			q90=joblib.load(MODELS_DIR / "xgb_q90.joblib"),
+			q10=q10,
+			q50=q50,
+			q90=q90,
 			cal=json.loads((MODELS_DIR / "calibration.json").read_text(encoding="utf-8")),
 		)
 	return _ARTIFACTS
