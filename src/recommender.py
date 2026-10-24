@@ -45,7 +45,7 @@ def recommend(val, prefs, weights=None, top_n=20):
 		raise KeyError(f"valuation table is missing columns: {missing}")
 
 	prefs = prefs or {}
-	defaults = {"value": 0.4, "walk": 0.25, "age": 0.2, "area": 0.15}
+	defaults = {"value": 0, "walk": 1, "age": 0, "area": 0}
 	if weights:
 		defaults.update(weights)
 	weights = defaults
