@@ -487,3 +487,8 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - comp_n is ~10 for nearly every row (k=10), so it is not a useful confidence signal. Low confidence (2.79%) comes from town_village and >80 m² only.
 
 - Recommender top-20 on a real query was dominated by one 足立区 building (7 units, same estimate) and 13 rows at the gap clip. Cause: lookalike dedup misses same-building units with slightly different rent; extreme gaps are model error. Fix: one row per building_key, gap cutoff, extra duplicate rule.
+
+
+### Municipality stats
+- 52 municipalities, counts sum to 183,490. Top by median rent: 中央区 ¥153k, 港区 ¥150k, 千代田区 ¥138k. Top per m²: 港区, 千代田区, 渋谷区. Lowest rent: 奥多摩町 ¥49k (n=3, low_sample).
+- Per-m² ranking differs from raw rent (中央区 has larger median units).
