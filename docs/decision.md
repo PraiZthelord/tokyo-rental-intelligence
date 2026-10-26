@@ -492,3 +492,64 @@ Composite building key (normalized title + municipality + town + stories + age; 
 ### Municipality stats
 - 52 municipalities, counts sum to 183,490. Top by median rent: 中央区 ¥153k, 港区 ¥150k, 千代田区 ¥138k. Top per m²: 港区, 千代田区, 渋谷区. Lowest rent: 奥多摩町 ¥49k (n=3, low_sample).
 - Per-m² ranking differs from raw rent (中央区 has larger median units).
+
+
+## 2026-10-24: Recommender fixes, municipality stats, comparables, first Streamlit page
+
+### Recommender: real-data check and fixes
+- First real query (max ¥100k, 1LDK/2LDK, walk <= 10) returned a top 20 dominated by one 足立区 building (7 units, same estimate) and rows with gaps of -0.31 to -0.37.
+- Causes: `lookalike_id` only removes listings identical in every visible field, so same-building units with slightly different rents survived; extreme gaps are mostly model error (likely 新築 pre-lease listings).
+- Fixes: one row per `building_key` (with `units_in_building`, meaning matching units), exclusion of asking rents more than 30% below the estimate, a second duplicate rule on (rent, area, walk, age, municipality), and `confidence` added to the required columns.
+- Bugs caught on the way: the gap sign was inverted (excluded nothing); `test_one_row_per_building` had the wrong expected count (4, not 5); the notebook and tests can import different modules (`recommend` vs `recommender`), so check `__file__`.
+- Earlier incident: `valuation_table.csv` was missing the madori columns and `row.get(..., False)` hid it (match rate 0.0). Fixed by adding the columns, correcting the S-L-D-K order, and raising a KeyError on missing columns.
+- Tests: [n] passing in tests/test_recommend.py.
+
+### Municipality stats
+- 52 municipalities, counts sum to 183,490. Top median rent: 中央区 ¥153k, 港区 ¥150k, 千代田区 ¥138k. Lowest: 奥多摩町 ¥49k (n=3, low_sample).
+- Top rent per m²: 港区, 千代田区, 渋谷区. Per-m² ranking differs from raw rent because 中央区 has larger median units. Guess: highest per m² would be 港区 or 千代田区 (correct, 港区 first).
+- Saved to data/interim/municipality_stats.csv (aggregate only, no listing-level data).
+
+### Comparables as functions (src/comps.py)
+- `same_building_comps` (excludes the listing and its twins, min 3) and `SimilarFinder` (fitted once per municipality, k=10).
+- Test mistake caught: querying row 1 gives n=4; the twin rule is tested by querying row 0 (n=3).
+- In the app, comparables use all rows, so they are not out-of-sample. Honest accuracy figures remain the CV numbers (NN comps MAE 12,488; XGBoost tuned GroupKFold MAE 10,967).
+
+### Streamlit predictor page (first working version)
+- app/main.py calls `valuate()` and `SimilarFinder`; it shows estimate, 80% interval and comparables (median, range, n).
+- Bugs fixed: the loader asked for `rent_yen` (the column is `Price_yen`); result keys were guessed instead of using the real ones (estimate, lo, hi, n, median, p25, p75); the layout dropdown used 1R although the data only has ワンルーム; errors were swallowed by `except ValueError`.
+- Warnings seen: models saved with scikit-learn 1.9.1 but loaded with 1.8.0 (app ran from the global Python, not the venv); XGBoost device mismatch. Fix: run `python -m streamlit run`, align versions, set loaded models to CPU.
+- Sanity check: [Setagaya 1K row in the app = ¥..., notebook = ¥82,131]. An odd input (50 m² ワンルーム) still gave an estimate, which shows why the low-confidence handling matters.
+
+### Decisions
+1. Keep Streamlit with a custom theme for the prototype; a FastAPI + HTML front end is a post-N2 option.
+2. UI languages: English and Japanese only, strings in app/i18n.py.
+3. Do not copy any assets, text or illustrations from reference sites.
+4. Public demo shows aggregates only (no titles, URLs, building keys).
+
+
+## 2026-10-26: App verification, gap formatting, EN/JA language switch
+
+### Verification of the app against the notebook
+- Setagaya row (世田谷区, 25 m², age 10, walk 5, floor 1, stories 2, 1K): app = [¥...], notebook/test = ¥82,131 (interval ¥69,683 to ¥96,478). [match / mismatch]
+- An earlier screenshot used 40 m², not 25 m², so it was not comparable (¥100,063 is plausible for 40 m²). Lesson: check the inputs before suspecting the model.
+- Streamlit warned about models saved with scikit-learn 1.9.1 but loaded with 1.8.0 (app ran from the global Python). Fix: run `python -m streamlit run app/main.py` inside the venv and align versions. Status: [aligned / still open].
+
+### Bugs found and fixed
+- **Gap displayed as 0.6% instead of 60.5%:** `gap_pct` is a fraction; the app formatted it as a percent. Fixed with `f"{gap_pct:+.1%}"`. `valuate()` was correct (loop check: rents below the interval gave "below" and gaps matching (rent - estimate) / estimate).
+- **Misdiagnosis on my side:** I first suspected the position logic; the loop check showed it was only display formatting.
+- **Bad input:** Streamlit widgets with `min_value` keep the last valid value, so the app looked like it accepted area 0. Fix: explicit validation (area > 0, stories >= 1, floor <= stories) with `st.error` and `st.stop()`.
+- **Comparables vs model disagreement** (e.g. あきる野市 25 m² ワンルーム: model ¥62,305 vs comparables median ¥47,144; 世田谷区 40 m² 1K: model interval ¥84.9k-121.9k vs comparables ¥124k-148k). Added an info note when the two ranges do not overlap. Cause unconfirmed.
+
+### Tests added
+- `tests/test_predict.py`: gap is 0 when asking equals estimate; gap is a fraction (1.5x estimate gives 0.5); position boundaries; negative gap below estimate; no gap keys without asking rent; label never says overpriced. [n passing]
+- `tests/test_i18n.py`: same keys in EN and JA, no empty values, missing key raises, no forbidden words, and every `t(lang, "key")` used in main.py exists in both languages.
+
+### EN/JA language switch
+- Strings in `app/i18n.py`, with `t(lang, key)` raising KeyError on missing keys.
+- Copilot invented key names in main.py that were not in i18n.py (e.g. `property_details`, `estimated_monthly_rent`); the key-coverage test caught it. Fixed by syncing keys into both languages.
+- Position labels are translated in the app; `valuate()` stays unchanged and language-agnostic.
+- Wording rule: never "overpriced"/"割高" as a verdict; use "relative to the model's expected range" (モデルの想定範囲より高め/低め).
+- Japanese strings reviewed by me: [done / list changes].
+
+### Next
+Recommender tab, map tab (GeoJSON + licence check), SHAP, aggregate-only public demo, deployment, README.
