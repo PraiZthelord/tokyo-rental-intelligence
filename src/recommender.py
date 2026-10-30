@@ -102,6 +102,7 @@ def recommend(val, prefs, weights=None, top_n=20):
 
 	output_columns = ["Price_yen", "estimate", "lo", "hi", "position", "gap_pct",
 					  "walk_min_nearest", "age_years", "area_m2", "municipality",
+					  "layout",
 					  "n_rooms", "score", "units_in_building"]
 	if frame.empty:
 		return pd.DataFrame(columns=output_columns), "No listings remain after applying the requested filters and safeguards."
@@ -116,6 +117,7 @@ def recommend(val, prefs, weights=None, top_n=20):
 					  weights["age"] * age_score + weights["area"] * area_score)
 	frame["units_in_building"] = frame.groupby("building_key")["building_key"].transform("size")
 	frame = frame.sort_values("score", ascending=False).drop_duplicates("building_key", keep="first").head(top_n)
+	frame["layout"] = frame.apply(madori_label, axis=1)
 
 	if len(frame) < top_n and initial_count:
 		name, removed = max(filter_removed.items(), key=lambda item: item[1], default=(None, 0))

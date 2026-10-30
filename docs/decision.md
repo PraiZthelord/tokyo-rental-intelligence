@@ -551,5 +551,27 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Wording rule: never "overpriced"/"割高" as a verdict; use "relative to the model's expected range" (モデルの想定範囲より高め/低め).
 - Japanese strings reviewed by me: [done / list changes].
 
+## 2026-10-30: Recommender tab
+
+### What was built
+- Second tab in the Streamlit app (`st.tabs`: Predictor | Recommender). Filters: max rent, min area, layouts, municipalities, max walk, max age. Four weight sliders (value, walk, age, area), normalised to sum to 1. Calls `recommend()` from `src/recommend.py` on `valuation_table.csv` (loaded with `@st.cache_data`).
+- Output never shows `jnc`, `building_key` or titles. UI wording avoids "deal", "bargain" and "overpriced".
+
+### Bugs found and fixed
+- **KeyError 'predictor' / 'recommender':** Copilot used new i18n keys in `main.py` that were not defined in `app/i18n.py`. Caught by `t()` raising KeyError and by the key-coverage test. Fixed by syncing keys into both languages. Second time this happened, so the rule is: add keys to both languages before using them.
+- **Layouts multiselect empty ("No options to select"):** options were read from a column that the valuation table does not have (it has `n_rooms` and `has_*` flags, not `Rooms`). Fixed with a fixed `LAYOUTS` list matching the labels `madori_label` produces.
+- **Results table did not show the layout:** `recommend()` only returned `n_rooms`, so 1K, 1LDK and ワンルーム were indistinguishable when several layouts were selected. Fixed by adding a `layout` column (via `madori_label`, computed on the final top-N only). Test added: `test_layout_column_present_and_correct`.
+- Raw column names (`Price_yen`, `gap_pct`) were shown to users; replaced with translated headers.
+
+### Checks
+- Query (max ¥100k, 1LDK/2LDK, walk <= 10): [n rows], one row per building, no gap below -30%. [yes/no]
+- Changing weights (value 1.0 vs walk 1.0) changes the order: [yes/no].
+- Impossible filters give a clear message instead of an error: [yes/no].
+- Tests: [n] passing.
+
+### Notes
+- Narrow filters (e.g. two municipalities, min area 25, max age 20) return few rows; this is expected and the note string explains which filter removed the most candidates.
+- Public demo still needs a stripped table (no `jnc`, titles, URLs or `building_key`); decide at deployment time.
+
 ### Next
-Recommender tab, map tab (GeoJSON + licence check), SHAP, aggregate-only public demo, deployment, README.
+Map tab (GeoJSON + licence check, name join to the 52 municipalities), SHAP, aggregate-only public demo, deployment, README.
