@@ -1,5 +1,7 @@
 .venv/
 data/
+!app/data/
+!app/data/tokyo_simplified.geojson
 models/
 *.joblib
 __pycache__/
