@@ -126,42 +126,46 @@ with tabs[0]:
 		st.caption(t(lang, "results_disclaimer"))
 
 with tabs[1]:
-	val = load_valuation_table()
-	def _column(*names):
-		return next((name for name in names if name in val.columns), None)
-	layout_col = _column("layout", "madori")
-	municipality_col = _column("municipality")
-	with st.form("recommender"):
-		max_rent = st.number_input(t(lang, "max_rent"), min_value=0, value=0, step=5000)
-		min_area = st.number_input(t(lang, "min_area"), min_value=0.0, value=0.0, step=1.0)
-		layouts = st.multiselect(t(lang, "layouts"), LAYOUTS)
-		municipality_options = sorted(val[municipality_col].dropna().astype(str).unique()) if municipality_col else []
-		selected_municipalities = st.multiselect(t(lang, "municipalities"), municipality_options)
-		max_walk = st.number_input(t(lang, "max_walk"), min_value=0.0, value=0.0, step=1.0)
-		max_age = st.number_input(t(lang, "max_age"), min_value=0.0, value=0.0, step=1.0)
-		value_weight = st.slider(t(lang, "weight_value"), 0.0, 1.0, 0.4, 0.05)
-		walk_weight = st.slider(t(lang, "weight_walk"), 0.0, 1.0, 0.25, 0.05)
-		age_weight = st.slider(t(lang, "weight_age"), 0.0, 1.0, 0.2, 0.05)
-		area_weight = st.slider(t(lang, "weight_area"), 0.0, 1.0, 0.15, 0.05)
-		recommend_submit = st.form_submit_button(t(lang, "recommend"), type="primary")
-	if recommend_submit:
-		weight_sum = value_weight + walk_weight + age_weight + area_weight
-		if weight_sum == 0:
-			st.error(t(lang, "weights_zero"))
-		else:
-			prefs = {}
-			for key, value in (("max_rent", max_rent), ("min_area", min_area), ("max_walk", max_walk), ("max_age", max_age)):
-				if value:
-					prefs[key] = value
-			if layouts: prefs["madori"] = layouts
-			if selected_municipalities: prefs["municipalities"] = selected_municipalities
-			weights = {"value": value_weight / weight_sum, "walk": walk_weight / weight_sum, "age": age_weight / weight_sum, "area": area_weight / weight_sum}
-			result, note = recommend(val, prefs, weights)
-			if result is None or len(result) == 0:
-				st.info(note)
+	valuation_path = PROJECT_ROOT / "data" / "interim" / "valuation_table.csv"
+	if not valuation_path.exists():
+		st.info(t(lang, "recommender_unavailable"))
+	else:
+		val = load_valuation_table()
+		def _column(*names):
+			return next((name for name in names if name in val.columns), None)
+		layout_col = _column("layout", "madori")
+		municipality_col = _column("municipality")
+		with st.form("recommender"):
+			max_rent = st.number_input(t(lang, "max_rent"), min_value=0, value=0, step=5000)
+			min_area = st.number_input(t(lang, "min_area"), min_value=0.0, value=0.0, step=1.0)
+			layouts = st.multiselect(t(lang, "layouts"), LAYOUTS)
+			municipality_options = sorted(val[municipality_col].dropna().astype(str).unique()) if municipality_col else []
+			selected_municipalities = st.multiselect(t(lang, "municipalities"), municipality_options)
+			max_walk = st.number_input(t(lang, "max_walk"), min_value=0.0, value=0.0, step=1.0)
+			max_age = st.number_input(t(lang, "max_age"), min_value=0.0, value=0.0, step=1.0)
+			value_weight = st.slider(t(lang, "weight_value"), 0.0, 1.0, 0.4, 0.05)
+			walk_weight = st.slider(t(lang, "weight_walk"), 0.0, 1.0, 0.25, 0.05)
+			age_weight = st.slider(t(lang, "weight_age"), 0.0, 1.0, 0.2, 0.05)
+			area_weight = st.slider(t(lang, "weight_area"), 0.0, 1.0, 0.15, 0.05)
+			recommend_submit = st.form_submit_button(t(lang, "recommend"), type="primary")
+		if recommend_submit:
+			weight_sum = value_weight + walk_weight + age_weight + area_weight
+			if weight_sum == 0:
+				st.error(t(lang, "weights_zero"))
 			else:
-				st.dataframe(result)
-				st.caption(note)
+				prefs = {}
+				for key, value in (("max_rent", max_rent), ("min_area", min_area), ("max_walk", max_walk), ("max_age", max_age)):
+					if value:
+						prefs[key] = value
+				if layouts: prefs["madori"] = layouts
+				if selected_municipalities: prefs["municipalities"] = selected_municipalities
+				weights = {"value": value_weight / weight_sum, "walk": walk_weight / weight_sum, "age": age_weight / weight_sum, "area": area_weight / weight_sum}
+				result, note = recommend(val, prefs, weights)
+				if result is None or len(result) == 0:
+					st.info(note)
+				else:
+					st.dataframe(result)
+					st.caption(note)
 
 with tabs[2]:
 	render_map(lang)
