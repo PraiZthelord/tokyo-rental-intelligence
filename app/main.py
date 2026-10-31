@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from app.i18n import t
+from app.map_tab import render_map
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -61,7 +62,7 @@ def load_valuation_table() -> pd.DataFrame:
 	return pd.read_csv(PROJECT_ROOT / "data" / "interim" / "valuation_table.csv")
 
 
-tabs = st.tabs([t(lang, "predictor"), t(lang, "recommender")])
+tabs = st.tabs([t(lang, "predictor"), t(lang, "recommender"), t(lang, "map")])
 with tabs[0]:
 	stats = pd.read_csv(_stats_path())
 	municipality_column = "municipality" if "municipality" in stats.columns else stats.columns[0]
@@ -160,3 +161,6 @@ with tabs[1]:
 			else:
 				st.dataframe(result)
 				st.caption(note)
+
+with tabs[2]:
+	render_map(lang)
