@@ -573,5 +573,30 @@ Composite building key (normalized title + municipality + town + stories + age; 
 - Narrow filters (e.g. two municipalities, min area 25, max age 20) return few rows; this is expected and the note string explains which filter removed the most candidates.
 - Public demo still needs a stripped table (no `jnc`, titles, URLs or `building_key`); decide at deployment time.
 
-### Next
-Map tab (GeoJSON + licence check, name join to the 52 municipalities), SHAP, aggregate-only public demo, deployment, README.
+## Map boundaries
+- Source: <where you downloaded it>, licence: <licence>. Credit shown in the map tab.
+- Dropped 所属未定地 (placeholder) and 9 island municipalities (島嶼部): almost no listings, and they would shrink the map.
+- Simplified with shapely (tolerance 0.0005) to keep load time low. Raw file stays in data/raw (gitignored).
+- Join key: ward_ja == municipality.
+
+## 2026-10-31: Map tab prototype
+
+### Map boundaries
+- Source: TODO (where the GeoJSON came from). Licence: TODO. Must be confirmed and credited before the public demo goes live.
+- The raw file (63 features) stays in data/raw (gitignored); only the simplified version is committed as app/data/tokyo_simplified.geojson.
+- Dropped the placeholder feature 所属未定地 (code None) and the 9 island municipalities (島嶼部). Almost no listings there, and their extent shrinks the map of mainland Tokyo to a dot. Result: 53 features.
+- Simplified with shapely (tolerance 0.0005, topology preserved), coordinates rounded to 5 decimals.
+- The file's CRS label says EPSG:900913, but the coordinates are lon/lat degrees. Plotly renders it correctly.
+- Join key: properties.ward_ja == municipality. Checked: all municipalities in the stats are on the map; only 檜原村 is on the map without stats (below min_n=100).
+
+### Map behaviour
+- Choropleth colors median rent or rent per m². Grey = low_sample (n < 100) or no_data. The map never colors municipalities that rest on thin data.
+- The map uses a pure, tested function (src/map_data.py: map_frame) so the status logic is unit-tested separately from Streamlit.
+- Selection by dropdown, empty by default; the numbers appear only after a choice. Click-to-select on the map is a nice-to-have, not required for the prototype. [Update this line with what you found when you tested the click.]
+- All strings go through i18n (EN/JA); the key-coverage test passes.
+
+### Recommender
+- Added a layout (madori) column to the recommender output via madori_label.
+
+### Deployment decision (planned)
+- The public demo shows aggregates and the predictor only. The recommender and comparables use listing-level data derived from SUUMO, so they stay local (DEMO_MODE hides them).
