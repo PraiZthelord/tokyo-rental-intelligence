@@ -4,6 +4,9 @@ data/
 !app/data/tokyo_simplified.geojson
 models/
 *.joblib
+!models/
+!models/*.joblib
+!models/calibration.json
 __pycache__/
 .ipynb_checkpoints/
 *.csv
