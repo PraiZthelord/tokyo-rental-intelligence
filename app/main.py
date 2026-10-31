@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from app.i18n import t
-from app.map_tab import render_map
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
 	sys.path.insert(0, str(PROJECT_ROOT))
 
+from app.i18n import t
+from app.map_tab import render_map
 from src.comps import SimilarFinder
 from src.parsers import parse_rooms
 from src.predict import valuate
@@ -28,6 +28,7 @@ def _stats_path() -> Path:
 		DATA_DIR / "interim" / "municipality_stats.csv",
 		DATA_DIR / "processed" / "municipality_stats.csv",
 		DATA_DIR / "municipality_stats.csv",
+		PROJECT_ROOT / "app" / "data" / "municipality_stats.csv",
 	):
 		if path.exists():
 			return path

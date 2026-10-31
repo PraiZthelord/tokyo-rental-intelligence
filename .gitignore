@@ -8,3 +8,4 @@ __pycache__/
 .ipynb_checkpoints/
 *.csv
 *.xlsx
+!app/data/municipality_stats.csv

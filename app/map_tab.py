@@ -26,7 +26,7 @@ def _load_geojson():
 
 @st.cache_data
 def _load_stats():
-	stats = pd.read_csv(ROOT / "data" / "interim" / "municipality_stats.csv")
+	stats = pd.read_csv(ROOT / "app" / "data" / "municipality_stats.csv")
 	if "rent_per_m2" not in stats and "median_rent_per_m2" in stats:
 		stats = stats.rename(columns={"median_rent_per_m2": "rent_per_m2"})
 	return stats
