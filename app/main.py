@@ -102,7 +102,10 @@ with tabs[0]:
 		try:
 			r = valuate(attrs, asking_rent or None)
 			st.session_state.result = r
-			st.session_state.comparables = load_finder().find(attrs)
+			if LISTINGS_PATH.exists():
+				st.session_state.comparables = load_finder().find(attrs)
+			else:
+				st.session_state.comparables = None
 		except Exception as exc:
 			st.error(f"{t(lang, 'error')}: {type(exc).__name__}: {exc}")
 	result = st.session_state.result
@@ -122,7 +125,10 @@ with tabs[0]:
 			if comparables["p25"] > result["hi"] or comparables["p75"] < result["lo"]:
 				st.info(t(lang, "comps_differ"))
 		else:
-			st.info(t(lang, "no_similar_listings"))
+			if LISTINGS_PATH.exists():
+				st.info(t(lang, "no_similar_listings"))
+			else:
+				st.info(t(lang, "comparables_unavailable"))
 		st.caption(t(lang, "results_disclaimer"))
 
 with tabs[1]:
