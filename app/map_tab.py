@@ -8,8 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 
-BASE = Path(__file__).parent
-ROOT = BASE.parent
+ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
 	sys.path.insert(0, str(ROOT))
 
@@ -18,17 +17,16 @@ from app.i18n import t
 
 
 @st.cache_data
-def load_geojson() -> dict:
-	with (BASE / "data" / "tokyo_simplified.geojson").open(
+def _load_geojson():
+	with (ROOT / "app" / "data" / "tokyo_simplified.geojson").open(
 		encoding="utf-8"
 	) as file:
 		return json.load(file)
 
 
 @st.cache_data
-def load_stats() -> pd.DataFrame:
-	stats_path = ROOT / "data" / "interim" / "municipality_stats.csv"
-	stats = pd.read_csv(stats_path)
+def _load_stats():
+	stats = pd.read_csv(ROOT / "app" / "data" / "municipality_stats.csv")
 	if "rent_per_m2" not in stats and "median_rent_per_m2" in stats:
 		stats = stats.rename(columns={"median_rent_per_m2": "rent_per_m2"})
 	return stats
@@ -49,8 +47,8 @@ def _selected_location(event):
 
 
 def render_map(lang):
-	geojson = load_geojson()
-	stats = load_stats()
+	geojson = _load_geojson()
+	stats = _load_stats()
 	names = [
 		feature["properties"]["ward_ja"]
 		for feature in geojson.get("features", [])

@@ -5,15 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from app.i18n import t
-from app.map_tab import render_map
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEMO_MODE = not (Path(__file__).resolve().parents[1] / "data" / "interim" / "valuation_table.csv").exists()
 if str(PROJECT_ROOT) not in sys.path:
 	sys.path.insert(0, str(PROJECT_ROOT))
 
+from app.i18n import t
+from app.map_tab import render_map
 from src.comps import SimilarFinder
 from src.parsers import parse_rooms
 from src.predict import valuate
@@ -29,6 +28,7 @@ def _stats_path() -> Path:
 		DATA_DIR / "interim" / "municipality_stats.csv",
 		DATA_DIR / "processed" / "municipality_stats.csv",
 		DATA_DIR / "municipality_stats.csv",
+		PROJECT_ROOT / "app" / "data" / "municipality_stats.csv",
 	):
 		if path.exists():
 			return path
@@ -54,8 +54,6 @@ lang = st.radio(
 	label_visibility="collapsed",
 )
 st.title(t(lang, "title"))
-if DEMO_MODE:
-	st.caption(t(lang, "demo_note"))
 
 from src.recommender import recommend
 
@@ -65,11 +63,7 @@ def load_valuation_table() -> pd.DataFrame:
 	return pd.read_csv(PROJECT_ROOT / "data" / "interim" / "valuation_table.csv")
 
 
-tabs = st.tabs(
-	[t(lang, "predictor"), t(lang, "map")]
-	if DEMO_MODE
-	else [t(lang, "predictor"), t(lang, "recommender"), t(lang, "map")]
-)
+tabs = st.tabs([t(lang, "predictor"), t(lang, "recommender"), t(lang, "map")])
 with tabs[0]:
 	stats = pd.read_csv(_stats_path())
 	municipality_column = "municipality" if "municipality" in stats.columns else stats.columns[0]
@@ -108,8 +102,10 @@ with tabs[0]:
 		try:
 			r = valuate(attrs, asking_rent or None)
 			st.session_state.result = r
-			if not DEMO_MODE:
+			if LISTINGS_PATH.exists():
 				st.session_state.comparables = load_finder().find(attrs)
+			else:
+				st.session_state.comparables = None
 		except Exception as exc:
 			st.error(f"{t(lang, 'error')}: {type(exc).__name__}: {exc}")
 	result = st.session_state.result
@@ -122,18 +118,24 @@ with tabs[0]:
 			st.write(f"{t(lang, 'position')}: {t(lang, position_key)} | {t(lang, 'gap')}: {result['gap_pct']:+.1%} | {t(lang, 'label')}: {result['label']}")
 		if result["confidence"] == "low":
 			st.warning(t(lang, "low_confidence"))
-		if not DEMO_MODE and comparables is not None:
+		if comparables is not None:
 			st.write(f"{t(lang, 'comparable_range')}: ¥{comparables['p25']:,.0f} – ¥{comparables['p75']:,.0f}")
 			st.write(f"{t(lang, 'comparable_median')}: ¥{comparables['median']:,.0f}")
 			st.write(f"{t(lang, 'comparable_listings')}: {comparables['n']}")
 			if comparables["p25"] > result["hi"] or comparables["p75"] < result["lo"]:
 				st.info(t(lang, "comps_differ"))
-		elif not DEMO_MODE:
-			st.info(t(lang, "no_similar_listings"))
+		else:
+			if LISTINGS_PATH.exists():
+				st.info(t(lang, "no_similar_listings"))
+			else:
+				st.info(t(lang, "comparables_unavailable"))
 		st.caption(t(lang, "results_disclaimer"))
 
-if not DEMO_MODE:
-	with tabs[1]:
+with tabs[1]:
+	valuation_path = PROJECT_ROOT / "data" / "interim" / "valuation_table.csv"
+	if not valuation_path.exists():
+		st.info(t(lang, "recommender_unavailable"))
+	else:
 		val = load_valuation_table()
 		def _column(*names):
 			return next((name for name in names if name in val.columns), None)
@@ -171,5 +173,5 @@ if not DEMO_MODE:
 					st.dataframe(result)
 					st.caption(note)
 
-with tabs[1 if DEMO_MODE else 2]:
+with tabs[2]:
 	render_map(lang)
