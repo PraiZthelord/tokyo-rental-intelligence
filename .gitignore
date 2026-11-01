@@ -8,3 +8,12 @@ __pycache__/
 .ipynb_checkpoints/
 *.csv
 *.xlsx
+!app/data/
+!app/data/*.geojson
+!app/data/municipality_stats.csv
+!models/
+!models/calibration.json
+!models/xgb_q10.joblib
+!models/xgb_q50.joblib
+!models/xgb_q90.joblib
+*.log
