@@ -76,6 +76,7 @@ TEXT = {
 		"map_median_rent": "Median rent",
 		"map_rent_per_m2": "Rent per m²",
 		"map_credit": "Map data is based on available rental listings.",
+		"demo_note": "Demo mode: valuation data is not available, so some features are limited.",
 	},
 	"ja": {
 		"title": "東京賃貸インテリジェンス",
@@ -154,6 +155,7 @@ TEXT = {
 		"map_median_rent": "中央値家賃",
 		"map_rent_per_m2": "平方メートル当たり家賃",
 		"map_credit": "地図データは利用可能な賃貸掲載情報に基づいています。",
+		"demo_note": "デモモード：評価データがないため、一部の機能は制限されています。",
 	},
 }
 
