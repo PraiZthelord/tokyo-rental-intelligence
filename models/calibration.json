@@ -1,0 +1,39 @@
+{
+  "q_band": {
+    "<80k": 0.019587062233691555,
+    "80-150k": 0.021977713028080714,
+    ">150k": 0.053374457214120596
+  },
+  "q_global": 0.02438583365275271,
+  "edges": [
+    0.0,
+    80000.0,
+    150000.0,
+    null
+  ],
+  "features": [
+    "area_m2",
+    "age_years",
+    "floor_min",
+    "stories_above",
+    "walk_min_nearest",
+    "n_rooms",
+    "has_L",
+    "has_D",
+    "has_K",
+    "has_S",
+    "is_1R"
+  ],
+  "cat": [
+    "municipality"
+  ],
+  "params": {
+    "colsample_bytree": 0.6978,
+    "learning_rate": 0.0407,
+    "max_depth": 9,
+    "min_child_weight": 6,
+    "n_estimators": 860,
+    "reg_lambda": 1.1218,
+    "subsample": 0.6786
+  }
+}
